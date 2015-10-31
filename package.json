@@ -1,0 +1,25 @@
+{
+  "name": "milight-manager",
+  "version": "1.0.0",
+  "description": "A stateful interface to MilLight/LimitlessLED/Disreputable Reseller X RGBW lights",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RyanJenkins/milight-manager.git"
+  },
+  "author": "Lanny",
+  "license": "GPLv2",
+  "bugs": {
+    "url": "https://github.com/RyanJenkins/milight-manager/issues"
+  },
+  "homepage": "https://github.com/RyanJenkins/milight-manager",
+  "dependencies": {
+    "express": "^4.13.3",
+    "home-dir": "^1.0.0",
+    "milight": "^0.1.0",
+    "underscore": "^1.8.3"
+  }
+}
