@@ -12,7 +12,8 @@ var defaults = {
   serverPort: 4242,
   syncOnStart: true,
   defaultState: {
-    on: false
+    on: true,
+    intensity: 100
   }
 }
 

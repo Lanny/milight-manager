@@ -3,7 +3,8 @@
 var Milight = require('milight'),
   express = require('express'),
   _ = require('underscore'),
-  utils = require('./utils')
+  utils = require('./utils'),
+  bodyParser = require('body-parser')
  
 var debug = utils.debug,
   log = utils.log,
@@ -20,28 +21,58 @@ var milight = new Milight({
 
 
 function syncState() {
-  log('Resynchronizing state');
+  log('Resynchronizing state')
 
-  config.defaultState.on?milight.on():milight.off();
-  state.on = config.defaultState.on;
+  config.defaultState.on?milight.on():milight.off()
+  state.on = config.defaultState.on
+
+  milight.white(config.defaultState.intensity, function(){});
+  state.intensity = config.defaultState.intensity
 }
 
-var app = express();
+var app = express()
+
+app.use(bodyParser.urlencoded({ extended: true }))
+
+app.get('/state', function(req, res) {
+  res.json(state)
+})
 
 app.post('/on', function(req, res) {
-  milight.zone(1).on();
-  state.on = true;
+  milight.on()
+  state.on = true
   res.json({status: 'SUCCESS'})
 })
 
 app.post('/off', function(req, res) {
-  milight.zone(1).off()
-  state.on = false;
-  res.json({status: 'SUCCESS'});
+  milight.off()
+  state.on = false
+  res.json({status: 'SUCCESS'})
 })
 
-app.get('/state', function(req, res) {
-  res.json(state);
+app.post('/set-intensity', function(req, res) {
+  var intensity = parseInt(req.body.intensity)
+
+  if (isNaN(intensity)) {
+    res.json({
+      status: 'FAILURE',
+      reason: '`intensity` was not a valid integer.'
+    })
+    return
+  }
+
+  if (intensity < 0 || intensity > 100) {
+    res.json({
+      status: 'FAILURE',
+      reason: '`intensity` was not in range of 0 to 100.'
+    })
+    return
+  }
+
+  milight.white(intensity, function() {
+    state.intensity = intensity
+    res.json({status: 'SUCCESS'})
+  })
 })
 
 
@@ -57,7 +88,7 @@ function main() {
   })
 }
 
-if (require.main === module) { main(); }
+if (require.main === module) { main() }
 
 
 
