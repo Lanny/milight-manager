@@ -26,8 +26,30 @@ function syncState() {
   config.defaultState.on?milight.on():milight.off()
   state.on = config.defaultState.on
 
-  milight.white(config.defaultState.intensity, function(){});
+  milight.white(config.defaultState.intensity, _.noop);
   state.intensity = config.defaultState.intensity
+}
+
+function startBrightnessSlide(initial, target, duration) {
+  var current = initial,
+    rate = Math.abs(initial - target) / duration,
+    timeUnit = 1 / rate
+
+  if (timeUnit < 0.5) {
+    timeUnit = 0.5
+    rate = Math.abs(initial - target) / duration;
+  }
+
+  ;(function tick() {
+    current += rate;
+    milight.white(current, _.noop);
+
+    if (Math.abs(current - initial) >= Math.abs(initial - target)) {
+      milight.white(target, _.noop)
+    } else {
+      setTimeout(tick, timeUnit * 1000)
+    }
+  })()
 }
 
 var app = express()
@@ -80,6 +102,9 @@ function main() {
   var server = app.listen(config.serverPort, function() {
     if (config.syncOnStart === true) {
       syncState()
+      setTimeout(function() {
+        startBrightnessSlide(10, 100, 120);
+      }, 1000);
     }
 
     log('Server started on %s:%s',

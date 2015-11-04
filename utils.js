@@ -1,6 +1,6 @@
-var fs = require('fs');
-var homeDir = require('home-dir');
-var _ = require('underscore');
+var fs = require('fs'),
+  homeDir = require('home-dir'),
+  _ = require('underscore')
 
 var configPaths = [
   './config.json',
@@ -11,9 +11,10 @@ var defaults = {
   host: '10.0.0.10',
   serverPort: 4242,
   syncOnStart: true,
+  managerAddress: '127.0.0.1',
   defaultState: {
     on: true,
-    intensity: 100
+    intensity: 10
   }
 }
 
