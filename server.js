@@ -78,6 +78,27 @@ app.post('/off', function(req, res) {
   res.json({status: 'SUCCESS'});
 });
 
+app.post('/toggle', function(req, res) {
+  var targetState = req.body.state;
+
+  if (targetState === 'on') {
+    milight.on();
+    state.on = true;
+  } else if (targetState === 'off') {
+    milight.off();
+    state.on = false;
+  } else {
+    res.json({
+      status: 'FAILURE',
+      reason: '`state` must be one of "on" or "off"'
+    });
+    return;
+  }
+
+  res.json({status: 'SUCCESS'});
+});
+
+
 app.post('/slide', function(req, res) {
   var initial = parseInt(req.body.initial),
     target = parseInt(req.body.target),
@@ -114,12 +135,16 @@ app.post('/set-intensity', function(req, res) {
 
 
 function main() {
+  if (config.webui === true) {
+    app.use('/webui', require('./webui'));
+  }
+
   var server = app.listen(config.serverPort, function() {
     if (config.syncOnStart === true) {
       syncState();
     }
 
-    startBrightnessSlide(1, 100, 30);
+    //startBrightnessSlide(1, 100, 30);
 
     log('Server started on %s:%s',
         server.address().address,
@@ -128,8 +153,4 @@ function main() {
 }
 
 if (require.main === module) { main(); }
-
-
-
-
 

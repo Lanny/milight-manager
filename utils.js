@@ -11,6 +11,7 @@ var defaults = {
   host: '10.0.0.10',
   serverPort: 4242,
   syncOnStart: true,
+  webui: false,
   managerAddress: '127.0.0.1',
   defaultState: {
     on: true,
