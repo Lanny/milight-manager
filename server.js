@@ -4,116 +4,130 @@ var Milight = require('milight'),
   express = require('express'),
   _ = require('underscore'),
   utils = require('./utils'),
-  bodyParser = require('body-parser')
+  bodyParser = require('body-parser');
  
 var debug = utils.debug,
   log = utils.log,
-  warn = utils.warn
+  warn = utils.warn;
 
 var config = utils.getConfig(),
-  state = {}
+  state = {};
 
 
 var milight = new Milight({
   host: config.host,
   broadcast: false
-})
+});
 
 
 function syncState() {
-  log('Resynchronizing state')
+  log('Resynchronizing state');
 
-  config.defaultState.on?milight.on():milight.off()
-  state.on = config.defaultState.on
+  if (config.defaultState.on) {
+    milight.on();
+  } else {
+    milight.off();
+  }
+  state.on = config.defaultState.on;
 
-  milight.white(config.defaultState.intensity, _.noop);
-  state.intensity = config.defaultState.intensity
+  milight.white(config.defaultState.intensity);
+  state.intensity = config.defaultState.intensity;
 }
 
-function startBrightnessSlide(initial, target, duration) {
+function startBrightnessSlide(initial, target, duration, callback) {
   var current = initial,
     rate = Math.abs(initial - target) / duration,
-    timeUnit = 1 / rate
+    timeUnit = 1 / rate;
+
+  callback = (callback===undefined)?_.noop:callback;
 
   if (timeUnit < 0.5) {
-    timeUnit = 0.5
+    timeUnit = 0.5;
     rate = Math.abs(initial - target) / duration;
   }
 
   ;(function tick() {
     current += rate;
-    milight.white(current, _.noop);
+    milight.white(current);
 
     if (Math.abs(current - initial) >= Math.abs(initial - target)) {
-      milight.white(target, _.noop)
+      milight.white(target);
     } else {
-      setTimeout(tick, timeUnit * 1000)
+      setTimeout(tick, timeUnit * 1000);
     }
-  })()
+  })();
 }
 
-var app = express()
+var app = express();
 
-app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/state', function(req, res) {
-  res.json(state)
-})
+  res.json(state);
+});
 
 app.post('/on', function(req, res) {
-  milight.on()
-  state.on = true
-  res.json({status: 'SUCCESS'})
-})
+  milight.on();
+  state.on = true;
+  res.json({status: 'SUCCESS'});
+});
 
 app.post('/off', function(req, res) {
-  milight.off()
-  state.on = false
-  res.json({status: 'SUCCESS'})
-})
+  milight.off();
+  state.on = false;
+  res.json({status: 'SUCCESS'});
+});
+
+app.post('/slide', function(req, res) {
+  var initial = parseInt(req.body.initial),
+    target = parseInt(req.body.target),
+    duration = parseInt(req.body.duration);
+
+  startBrightnessSlide(initial, target, duration);
+  res.json({status: 'SUCCESS'});
+});
 
 app.post('/set-intensity', function(req, res) {
-  var intensity = parseInt(req.body.intensity)
+  var intensity = parseInt(req.body.intensity);
 
   if (isNaN(intensity)) {
     res.json({
       status: 'FAILURE',
       reason: '`intensity` was not a valid integer.'
-    })
-    return
+    });
+    return;
   }
 
   if (intensity < 0 || intensity > 100) {
     res.json({
       status: 'FAILURE',
       reason: '`intensity` was not in range of 0 to 100.'
-    })
-    return
+    });
+    return;
   }
 
   milight.white(intensity, function() {
-    state.intensity = intensity
-    res.json({status: 'SUCCESS'})
-  })
-})
+    state.intensity = intensity;
+    res.json({status: 'SUCCESS'});
+  });
+});
 
 
 function main() {
   var server = app.listen(config.serverPort, function() {
     if (config.syncOnStart === true) {
-      syncState()
-      setTimeout(function() {
-        startBrightnessSlide(10, 100, 120);
-      }, 1000);
+      syncState();
     }
+
+    startBrightnessSlide(1, 100, 30);
 
     log('Server started on %s:%s',
         server.address().address,
-        server.address().port)
-  })
+        server.address().port);
+  });
 }
 
-if (require.main === module) { main() }
+if (require.main === module) { main(); }
 
 
 
