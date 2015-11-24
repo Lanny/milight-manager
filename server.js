@@ -133,6 +133,22 @@ app.post('/set-intensity', function(req, res) {
   });
 });
 
+app.post('/set-color', function(req, res) {
+  var color = req.body.hex;
+
+  if (typeof color !== 'string' || color.match(/^#[0-9A-Fa-f]{6}$/) === null) {
+    res.json({
+      status: 'FAILURE',
+      reason: '`color` was not a valid hex code.'
+    });
+    return;
+  }
+
+  milight.rgb(color);
+  res.json({status: 'SUCCESS'});
+});
+
+
 
 function main() {
   if (config.webui === true) {

@@ -2,17 +2,31 @@
 
 var http = require('http'),
   _ = require('underscore'),
+  querystring = require('querystring'),
   utils = require('./utils');
  
 var config = utils.getConfig();
 
-function makeReqOpts(url) {
-  return {
+function makeReqOpts(url, settings) {
+  settings = _.extend({}, settings);
+
+  var opts = {
     hostname: config.managerAddress,
     port: config.serverPort,
     method: 'POST',
-    path: url
+    path: url,
+    headers: {}
   };
+
+  if (typeof settings.data === 'object') {
+    var postData = querystring.stringify(settings.data);
+    opts.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    opts.headers['Content-Length'] = Buffer.byteLength(postData);
+
+    opts._data = postData;
+  }
+
+  return opts;
 }
 
 function defaultResponseHandler(res) {
@@ -60,9 +74,26 @@ function turnOff() {
   req.end();
 }
 
+function setColorHex(colorCode) {
+  if (colorCode.slice(0,1) !== '#') {
+    colorCode = '#' + colorCode;
+  }
+
+  var opts = makeReqOpts('/set-color', {
+    data: {
+      hex: colorCode
+    }
+  });
+  var req = http.request(opts, defaultResponseHandler);
+
+  req.write(opts._data);
+  req.end();
+}
+
 var subcommands = {
   'on': turnOn,
-  'off': turnOff
+  'off': turnOff,
+  'hex': setColorHex
 };
 
 function delegate(subcommand, args) {
