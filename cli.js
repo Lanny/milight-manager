@@ -73,6 +73,15 @@ function makeResponseHandler(callback) {
   });
 }
 
+function defaultErrorHandler(err) {
+  if (err.code === 'ECONNREFUSED') {
+    console.error('Could not connect to manager server'.red);
+    process.exit(1);
+  } else {
+    throw err;
+  }
+}
+
 function state() {
   function callback(data) {
     var s = data.state;
@@ -94,16 +103,19 @@ function state() {
   var opts = { addtOpts: { method: 'GET' } };
   var req = http.request(makeReqOpts('/state', opts),
                          makeResponseHandler(callback));
+  req.on('error', defaultErrorHandler);
   req.end();
 }
 
 function turnOn() {
   var req = http.request(makeReqOpts('/on'), makeResponseHandler());
+  req.on('error', defaultErrorHandler);
   req.end();
 }
 
 function turnOff() {
   var req = http.request(makeReqOpts('/off'), makeResponseHandler());
+  req.on('error', defaultErrorHandler);
   req.end();
 }
 
@@ -119,6 +131,7 @@ function setColorHex(colorCode) {
   });
   var req = http.request(opts, defaultResponseHandler);
 
+  req.on('error', defaultErrorHandler);
   req.write(opts._data);
   req.end();
 }
@@ -139,7 +152,11 @@ function delegate(subcommand, args) {
     process.exit(1);
   }
 
-  f.apply(this, args);
+  try {
+    f.apply(this, args);
+  } catch (e) {
+    console.log(e);
+  }
 }
 
 if (require.main === module) {

@@ -16,7 +16,7 @@ var config = utils.getConfig(),
 
 var milight = new Milight({
   host: config.host,
-  broadcast: false
+  broadcast: true
 });
 
 
@@ -63,7 +63,10 @@ var app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/state', function(req, res) {
-  res.json(state);
+  res.json({
+    status: 'SUCCESS',
+    state: state
+  });
 });
 
 app.post('/on', function(req, res) {
@@ -153,6 +156,13 @@ app.post('/set-color', function(req, res) {
 function main() {
   if (config.webui === true) {
     app.use('/webui', require('./webui'));
+  }
+
+  if (config.useBridgeListener === true) {
+    var BridgeListener = require('./bridge-listener');
+
+    listener = new BridgeListener(state);
+    listener.start();
   }
 
   var server = app.listen(config.serverPort, function() {

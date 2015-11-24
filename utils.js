@@ -9,10 +9,12 @@ var configPaths = [
 
 var defaults = {
   host: '10.0.0.10',
+  bridgePort: 8899,
   serverPort: 4242,
   syncOnStart: true,
   webui: false,
   managerAddress: '127.0.0.1',
+  useBridgeListener: true,
   defaultState: {
     on: true,
     intensity: 10
@@ -35,7 +37,7 @@ function warn() {
 
 function debug() {
   if (LOG_LEVEL > 3) {
-    console.debug.apply(console, arguments);
+    console.info.apply(console, arguments);
   }
 }
 
