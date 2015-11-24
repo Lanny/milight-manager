@@ -3,6 +3,7 @@
 var http = require('http'),
   _ = require('underscore'),
   querystring = require('querystring'),
+  colors = require('colors'),
   utils = require('./utils');
  
 var config = utils.getConfig();
@@ -18,6 +19,8 @@ function makeReqOpts(url, settings) {
     headers: {}
   };
 
+  _.extend(opts, settings.addtOpts);
+
   if (typeof settings.data === 'object') {
     var postData = querystring.stringify(settings.data);
     opts.headers['Content-Type'] = 'application/x-www-form-urlencoded';
@@ -29,48 +32,78 @@ function makeReqOpts(url, settings) {
   return opts;
 }
 
-function defaultResponseHandler(res) {
-  if (res.statusCode !== 200) {
-    console.error('Error, status code: ', res.statusCode);
-    process.exit(1);
-  }
-
-  var body = '';
-  
-  res.on('data', function(chunk) {
-    body += chunk;
-  });
-
-  res.on('end', function() {
-    var response;
-    try {
-      response = JSON.parse(body);
-    } catch (e) {
-      console.error('Error parsing response:', body);
+function makeResponseHandler(callback) {
+  return (function(res) {
+    if (res.statusCode !== 200) {
+      console.error('Error, status code: ', (''+res.statusCode).red);
       process.exit(1);
     }
 
-    if (response.status !== 'SUCCESS') {
-      if (response.status !== undefined && response.reason !== undefined) {
-        console.error(response.status, ':', response.reason);
-      } else {
-        console.error('Malformed response from server.');
+    var body = '';
+    
+    res.on('data', function(chunk) {
+      body += chunk;
+    });
+
+    res.on('end', function() {
+      var response;
+      try {
+        response = JSON.parse(body);
+      } catch (e) {
+        console.error('Error parsing response:', body);
+        process.exit(1);
       }
 
-      process.exit(1);
-    } else {
-      process.exit(0);
-    }
+      if (response.status !== 'SUCCESS') {
+        if (response.status !== undefined && response.reason !== undefined) {
+          console.error(response.status, ':', response.reason);
+        } else {
+          console.error('Malformed response from server.');
+        }
+
+        process.exit(1);
+      } else {
+        if (callback === undefined) {
+          process.exit(0);
+        } else {
+          callback(response);
+        }
+      }
+    });
   });
 }
 
+function state() {
+  function callback(data) {
+    var s = data.state;
+
+    console.log('Full array status: %s', s.on?'ON'.green:'OFF'.red);
+
+    var bar = '';
+    for (var i=0; i<10; i++) {
+      if (i < s.intensity / 10) {
+        bar += '|'.white;
+      } else {
+        bar += '|'.black;
+      }
+    }
+
+    console.log('White intensity: %s %d%', bar, s.intensity);
+  }
+
+  var opts = { addtOpts: { method: 'GET' } };
+  var req = http.request(makeReqOpts('/state', opts),
+                         makeResponseHandler(callback));
+  req.end();
+}
+
 function turnOn() {
-  var req = http.request(makeReqOpts('/on'), defaultResponseHandler);
+  var req = http.request(makeReqOpts('/on'), makeResponseHandler());
   req.end();
 }
 
 function turnOff() {
-  var req = http.request(makeReqOpts('/off'), defaultResponseHandler);
+  var req = http.request(makeReqOpts('/off'), makeResponseHandler());
   req.end();
 }
 
@@ -93,7 +126,9 @@ function setColorHex(colorCode) {
 var subcommands = {
   'on': turnOn,
   'off': turnOff,
-  'hex': setColorHex
+  'hex': setColorHex,
+  '?': state,
+  'state': state
 };
 
 function delegate(subcommand, args) {
