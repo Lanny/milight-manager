@@ -1,2 +1,7 @@
 # milight-manager
 A stateful interface to MilLight/LimitlessLED/Disreputable Reseller X RGBW lights
+
+## What does it do?
+MiLight makes these nifty wifi controlled lights that are much cheaper knockoffs of the likes of Philips Hue. For god only knows what reason the same product is sold, with universally poor documentation/support, by a number of companies under a number of names. Mine were sold by someone called LimitlessLED who supposedly operate out of New Zealand but don't appear to have any greater command of the English language than the original manufacturer.
+
+There exist a number of libraries in a number of languages that package the MiLight API (this project uses the [node-milight](https://github.com/oeuillot/node-milight) library) but the bulbs themselves are fundamentally one-way: you can set state but you can not query it. You also cannot, obviously, program them directly (as in execute logic on the bulbs). milight-manager is primarily a server that, in addition to providing an HTTP interface to a set of milight bulbs, also attempts to track the state the bulbs are in. This way we can say things like "dim the lights if I haven't already  turned them off manually". It also has support for gradual (or as gradual as you can get with 100 discrete intensity levels) slides in hue and brightness, which is useful for things like simulating sunrise/set or just not blinding yourself in the morning.
